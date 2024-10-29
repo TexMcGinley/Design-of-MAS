@@ -4,7 +4,7 @@ turtles-own [ state ] ;; Four states: "B" (Believer), "F" (FactChecker), "S" (Su
 
 links-own [ weight ]  ;; The weight of the links between agents
 
-globals [ number-of-believers number-of-susceptibles bad-actor-degree ]
+globals [ number-of-believers number-of-susceptibles ]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;   SETUP   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -20,7 +20,7 @@ end
 
 to go
   tick
-  if ticks > 200 [stop]   ;; Stop condition
+  if ticks > 300 [stop]   ;; Stop condition
 
   spreading               ;
   forgetting              ;-- Main procedures for agent behavior
@@ -38,7 +38,6 @@ to setup-var
 
   ;; Set the numbers (you can create sliders for these)
   set number-of-believers 0      ;; Number of Believers
-  set bad-actor-degree 1           ;; Desired degree (number of connections) for Bad Actors
 
   ;; Ensure the total does not exceed the number of agents
   if (number-of-bad-actors + number-of-believers) > number-of-agents [
@@ -182,9 +181,9 @@ to-report ask-proceed?
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-210
+233
 10
-647
+670
 448
 -1
 -1
@@ -217,42 +216,42 @@ number-of-agents
 number-of-agents
 10
 1000
-199.0
+1000.0
 1
 1
 NIL
 HORIZONTAL
 
 CHOOSER
-14
-377
-199
-422
+27
+379
+212
+424
 Type-of-network
 Type-of-network
 "Barabási–Albert algorithm" "Erdős–Rényi model"
 0
 
 SLIDER
-30
-121
-202
-154
+28
+206
+200
+239
 pforget
 pforget
 0
 1
-0.05
+0.1
 0.01
 1
 NIL
 HORIZONTAL
 
 SLIDER
-31
-81
+28
+170
+200
 203
-114
 beta-spreadingrate
 beta-spreadingrate
 0
@@ -264,10 +263,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-30
-161
-202
-194
+28
+243
+200
+276
 pverify
 pverify
 0
@@ -279,25 +278,25 @@ NIL
 HORIZONTAL
 
 SLIDER
-30
-199
-202
-232
+28
+280
+200
+313
 alpha-hoaxcredibility
 alpha-hoaxcredibility
 0
 1
-1.0
+0.61
 0.01
 1
 NIL
 HORIZONTAL
 
 BUTTON
-101
-317
-167
-350
+112
+343
+178
+376
 SETUP
 setup
 NIL
@@ -311,10 +310,10 @@ NIL
 1
 
 BUTTON
-16
-317
-79
-350
+27
+343
+90
+376
 GO
 go
 T
@@ -328,10 +327,10 @@ NIL
 1
 
 SWITCH
-34
-434
-201
-467
+26
+427
+193
+460
 PC-low-performance?
 PC-low-performance?
 1
@@ -339,10 +338,10 @@ PC-low-performance?
 -1000
 
 BUTTON
-44
-493
-118
-526
+27
+468
+101
+501
 go-once
 go
 NIL
@@ -356,10 +355,10 @@ NIL
 0
 
 PLOT
-696
+690
 10
-1051
-250
+1078
+265
 State-of-people
 NIL
 NIL
@@ -377,10 +376,10 @@ PENS
 "BAD-ACTORS" 1.0 0 -2674135 true "" ""
 
 MONITOR
-704
-258
-774
-303
+692
+309
+762
+354
 # Vertices
 count turtles
 17
@@ -388,10 +387,10 @@ count turtles
 11
 
 MONITOR
-704
-335
-764
-380
+849
+309
+909
+354
 # Edges
 count links
 1
@@ -399,10 +398,10 @@ count links
 11
 
 MONITOR
-825
-281
-908
-326
+764
+309
+847
+354
 Avg. Degree
 sum([count link-neighbors] of turtles) / count turtles
 3
@@ -410,19 +409,128 @@ sum([count link-neighbors] of turtles) / count turtles
 11
 
 SLIDER
-29
-243
-201
-276
+32
+67
+204
+100
 number-of-bad-actors
 number-of-bad-actors
 0
 number-of-agents
-1.0
+3.0
 1
 1
 NIL
 HORIZONTAL
+
+MONITOR
+691
+400
+756
+445
+#Believer
+count turtles with [state = \"B\"]
+17
+1
+11
+
+MONITOR
+759
+400
+853
+445
+# Susceptibles
+count turtles with [state = \"S\"]
+17
+1
+11
+
+MONITOR
+855
+400
+959
+445
+# Fact-checkers
+count turtles with [state = \"F\"]
+17
+1
+11
+
+MONITOR
+961
+400
+1048
+445
+# Bad Actors
+count turtles with [state = \"BA\"]
+17
+1
+11
+
+TEXTBOX
+690
+375
+840
+393
+Count agents:
+13
+0.0
+1
+
+TEXTBOX
+689
+288
+839
+306
+Graph metrics:
+13
+0.0
+1
+
+TEXTBOX
+31
+10
+181
+28
+Setup:
+13
+0.0
+1
+
+TEXTBOX
+29
+143
+179
+161
+Hoaxes:
+13
+0.0
+1
+
+SLIDER
+32
+104
+204
+137
+bad-actor-degree
+bad-actor-degree
+0
+number-of-agents
+71.0
+1
+1
+NIL
+HORIZONTAL
+
+TEXTBOX
+28
+323
+178
+341
+Graph:
+13
+0.0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
