@@ -1,8 +1,10 @@
 extensions [ nw ]
 
-turtles-own [ state ] ;; Three states of agents: "B" (believer) ;  "F" (factChecker) ; "S" (susceptible)
+turtles-own [ state ] ;; Four states: "B" (Believer), "F" (FactChecker), "S" (Susceptible), "BA" (Bad Actor)
 
-links-own [ weigth ]  ;; the weight of the links between agents
+links-own [ weight ]  ;; The weight of the links between agents
+
+globals [ number-of-believers number-of-susceptibles bad-actor-degree ]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;   SETUP   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -14,67 +16,116 @@ to setup
   reset-ticks
 end
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;   GO   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;   GO   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to go
   tick
-  if ticks > 1000 [stop]   ;; stop condition (300 units of time)
+  if ticks > 200 [stop]   ;; Stop condition
 
   spreading               ;
-  forgetting              ;-- Three main procedures for agent's behavior
-  veryfing                ;
+  forgetting              ;-- Main procedures for agent behavior
+  verifying               ;
 
-  update-colors           ;; just to improve the visualisation
-  update-plot             ;; update plots of the Interface
+  update-colors           ;; Improve visualization
+  update-plot             ;; Update plots
 end
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  SETUP PROCEDURES  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  SETUP PROCEDURES  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to setup-var
   set-default-shape turtles "person"
   set-default-shape links "curved link"
+
+  ;; Set the numbers (you can create sliders for these)
+  set number-of-believers 0      ;; Number of Believers
+  set bad-actor-degree 1           ;; Desired degree (number of connections) for Bad Actors
+
+  ;; Ensure the total does not exceed the number of agents
+  if (number-of-bad-actors + number-of-believers) > number-of-agents [
+    user-message "Error: The sum of Bad Actors and Believers exceeds the total number of agents."
+    stop
+  ]
+
+  set number-of-susceptibles number-of-agents - number-of-bad-actors - number-of-believers
+
   update-output
 end
 
 to update-output
   clear-output
-  output-print "* Diffusion model in social networks *"
+  output-print "* Diffusion model in social networks with Bad Actors *"
   if Type-of-network = "BA" [output-print "Barabási–Albert network"]
   if Type-of-network = "ER" [output-print "Erdős–Rényi network"]
+  output-print (word "Number of Bad Actors: " number-of-bad-actors)
+  output-print (word "Number of Believers: " number-of-believers)
+  output-print (word "Number of Susceptibles: " number-of-susceptibles)
+  output-print (word "Bad Actor Degree: " bad-actor-degree)
 end
 
 to setup-turtles
-  if Type-of-network = "Barabási–Albert algorithm" [ nw:generate-preferential-attachment turtles links number-of-agents 3 ]
-  if Type-of-network = "Erdős–Rényi model" [
-    if number-of-agents > 100 [
-      if PC-low-performance? and ask-proceed? [
-        clear-output output-print (word "Erdős–Rényi model with " number-of-agents " nodes.")
-        nw:generate-random turtles links number-of-agents 0.00585
-      ]
-    ]
+  if Type-of-network = "Barabási–Albert algorithm" [
+    nw:generate-preferential-attachment turtles links number-of-agents 3
   ]
- init-edges
+  if Type-of-network = "Erdős–Rényi model" [
+    nw:generate-random turtles links number-of-agents 0.00585
+  ]
+  init-edges
 end
 
 to init-edges
   ask links [set color 3]
-  ask turtles
-  [ setxy random-xcor random-ycor
-    ifelse random 100 <= 90 [ set state "S" ][ set state "B" ]
+  ask turtles [
+    setxy random-xcor random-ycor
+    set state "S"  ;; Initialize all turtles as Susceptible
   ]
+
+  ;; Assign Bad Actors
+  ask n-of number-of-bad-actors turtles [
+    set state "BA"
+  ]
+
+  ;; Assign Believers from the remaining Susceptibles
+  ask n-of number-of-believers turtles with [state = "S"] [
+    set state "B"
+  ]
+
+  ;; Adjust Bad Actors' connections
+  adjust-bad-actor-connections
+
   update-colors
+end
+
+to adjust-bad-actor-connections
+  ask turtles with [state = "BA"] [
+    let current-degree count link-neighbors
+    ;; Remove existing links if any
+    ask my-links [ die ]
+
+    ;; Determine potential turtles to connect to (excluding self and already connected turtles)
+    let potential-turtles turtles with [ self != myself ]
+    let max-degree count potential-turtles
+    let desired-degree min(list bad-actor-degree max-degree)
+
+    ;; Create new links to reach the desired degree
+    create-links-with n-of desired-degree potential-turtles [
+      set color red  ;; Optional: Color links from Bad Actors differently
+    ]
+  ]
 end
 
 to update-colors
   ask turtles [
-    if state = "B" [ set color blue ]
-    if state = "F" [ set color red ]
-    if state = "S" [ set color gray ]
+    if state = "BA" [ set color red ]
+    if state = "B"  [ set color blue ]
+    if state = "F"  [ set color green ]
+    if state = "S"  [ set color gray ]
   ]
 end
 
 to update-plot
   set-current-plot "State-of-people"
+  set-current-plot-pen "BAD-ACTORS"
+  plot count turtles with [state = "BA"]
   set-current-plot-pen "BELIEVERS"
   plot count turtles with [state = "B"]
   set-current-plot-pen "FACT-CHECKERS"
@@ -83,17 +134,14 @@ to update-plot
   plot count turtles with [state = "S"]
 end
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  GO PROCEDURES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  GO PROCEDURES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-to spreading  ;; each agent modifies with some probability its state considering the points of view (states) of its neighbors;
-  ; S -> B and S -> F according to:
-  ; S -> B : "spreading" function for the hoax (fi)
-  ; S -> F : disseminate among the immediate neighborhood of a vertex (gi)
-  ask turtles with [state = "S"][
-    let nB count link-neighbors with [state = "B"] ; n-of neighbors Believers
-    let nF count link-neighbors with [state = "F"] ; n-of neighbors Fact-checkers
-    let _1PlusA ( 1 + alpha-hoaxCredibility)
-    let _1MinusA ( 1 - alpha-hoaxCredibility)
+to spreading  ;; Agents modify their state based on neighbors
+  ask turtles with [state = "S"] [
+    let nB count link-neighbors with [state = "B" or state = "BA"] ; Neighbors who are Believers or Bad Actors
+    let nF count link-neighbors with [state = "F"]                 ; Neighbors who are Fact-checkers
+    let _1PlusA (1 + alpha-hoaxCredibility)
+    let _1MinusA (1 - alpha-hoaxCredibility)
     let den (nB * _1PlusA + nF * _1MinusA)
     let f 0
     let g 0
@@ -103,33 +151,34 @@ to spreading  ;; each agent modifies with some probability its state considering
     ]
 
     let random-val-f random-float 1
-    ifelse random-val-f < f
-    [ set state "B" ]
-    [ if random-val-f < (f + g) [ set state "F" ]
+    ifelse random-val-f < f [
+      set state "B"
+    ] [
+      if random-val-f < (f + g) [ set state "F" ]
     ]
   ]
 end
 
-to forgetting  ;; B -> S; F -> S  -- Each agent, regardless of belief state, forgets the news with a fixed probability pforget
-  ask turtles with [state = "B" or state = "F"][
+to forgetting  ;; B -> S; F -> S
+  ask turtles with [state = "B" or state = "F"] [
     if random-float 1 < pForget [
       set state "S"
     ]
   ]
 end
 
-to veryfing  ;; B-> F ; each agent can fact-check the hoax with a fixed probability pverify;
-  ask turtles with [state = "B"][
+to verifying  ;; B-> F; Bad Actors remain unaffected
+  ask turtles with [state = "B"] [
     if random-float 1 < pVerify [
       set state "F"
     ]
   ]
 end
 
-;;;;;;;;;;;;;;;;;;;;;;; UTILS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; UTILS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to-report ask-proceed?
-  report user-yes-or-no? "The network can be too wide to display in old PC: may suggest you to disable 'view updates' before press 'GO' button? Press Y to continue"
+  report user-yes-or-no? "The network can be too wide to display on old PCs. May we suggest you disable 'view updates' before pressing the 'GO' button? Press Y to continue."
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -168,21 +217,21 @@ number-of-agents
 number-of-agents
 10
 1000
-205.0
+199.0
 1
 1
 NIL
 HORIZONTAL
 
 CHOOSER
-20
-323
-205
-368
+14
+377
+199
+422
 Type-of-network
 Type-of-network
 "Barabási–Albert algorithm" "Erdős–Rényi model"
-1
+0
 
 SLIDER
 30
@@ -193,7 +242,7 @@ pforget
 pforget
 0
 1
-0.18
+0.05
 0.01
 1
 NIL
@@ -238,17 +287,17 @@ alpha-hoaxcredibility
 alpha-hoaxcredibility
 0
 1
-0.3
+1.0
 0.01
 1
 NIL
 HORIZONTAL
 
 BUTTON
-107
-263
-173
-296
+101
+317
+167
+350
 SETUP
 setup
 NIL
@@ -262,10 +311,10 @@ NIL
 1
 
 BUTTON
-22
-263
-85
-296
+16
+317
+79
+350
 GO
 go
 T
@@ -279,21 +328,21 @@ NIL
 1
 
 SWITCH
-40
-380
-207
-413
+34
+434
+201
+467
 PC-low-performance?
 PC-low-performance?
-0
+1
 1
 -1000
 
 BUTTON
-50
-439
-124
-472
+44
+493
+118
+526
 go-once
 go
 NIL
@@ -315,16 +364,17 @@ State-of-people
 NIL
 NIL
 0.0
-1000.0
+50.0
 0.0
-1000.0
+300.0
 true
 true
 "" ""
 PENS
 "BELIEVERS" 1.0 0 -14070903 true "" ""
 "SUSCEPTIBLES" 1.0 0 -7500403 true "" ""
-"FACT-CHECKERS" 1.0 0 -2674135 true "" ""
+"FACT-CHECKERS" 1.0 0 -11085214 true "" ""
+"BAD-ACTORS" 1.0 0 -2674135 true "" ""
 
 MONITOR
 704
@@ -358,6 +408,21 @@ sum([count link-neighbors] of turtles) / count turtles
 3
 1
 11
+
+SLIDER
+29
+243
+201
+276
+number-of-bad-actors
+number-of-bad-actors
+0
+number-of-agents
+1.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
