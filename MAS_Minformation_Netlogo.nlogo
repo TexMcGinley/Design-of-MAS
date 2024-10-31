@@ -20,7 +20,7 @@ end
 
 to go
   tick
-  if ticks > 300 [stop]   ;; Stop condition
+  if ticks > 168 [stop]   ;; Stop condition
 
   spreading               ;
   forgetting              ;-- Main procedures for agent behavior
@@ -115,7 +115,7 @@ end
 to update-colors
   ask turtles [
     if state = "BA" [ set color red ]
-    if state = "B"  [ set color blue ]
+    if state = "B"  [ set color yellow ]
     if state = "F"  [ set color green ]
     if state = "S"  [ set color gray ]
   ]
@@ -181,9 +181,9 @@ to-report ask-proceed?
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-233
+626
 10
-670
+1063
 448
 -1
 -1
@@ -256,7 +256,7 @@ beta-spreadingrate
 beta-spreadingrate
 0
 1
-0.5
+0.7
 0.01
 1
 NIL
@@ -286,7 +286,7 @@ alpha-hoaxcredibility
 alpha-hoaxcredibility
 0
 1
-0.61
+0.3
 0.01
 1
 NIL
@@ -333,7 +333,7 @@ SWITCH
 460
 PC-low-performance?
 PC-low-performance?
-1
+0
 1
 -1000
 
@@ -355,31 +355,31 @@ NIL
 0
 
 PLOT
-690
+213
 10
-1078
+601
 265
 State-of-people
 NIL
 NIL
 0.0
-50.0
+168.0
 0.0
 300.0
 true
 true
 "" ""
 PENS
-"BELIEVERS" 1.0 0 -14070903 true "" ""
+"BELIEVERS" 1.0 0 -1184463 true "" ""
 "SUSCEPTIBLES" 1.0 0 -7500403 true "" ""
 "FACT-CHECKERS" 1.0 0 -11085214 true "" ""
 "BAD-ACTORS" 1.0 0 -2674135 true "" ""
 
 MONITOR
-692
-309
-762
-354
+234
+322
+304
+367
 # Vertices
 count turtles
 17
@@ -387,10 +387,10 @@ count turtles
 11
 
 MONITOR
-849
-309
-909
-354
+391
+322
+451
+367
 # Edges
 count links
 1
@@ -398,10 +398,10 @@ count links
 11
 
 MONITOR
-764
-309
-847
-354
+306
+322
+389
+367
 Avg. Degree
 sum([count link-neighbors] of turtles) / count turtles
 3
@@ -417,17 +417,17 @@ number-of-bad-actors
 number-of-bad-actors
 0
 number-of-agents
-3.0
-1
+1.0
+50
 1
 NIL
 HORIZONTAL
 
 MONITOR
-691
-400
-756
-445
+233
+413
+298
+458
 #Believer
 count turtles with [state = \"B\"]
 17
@@ -435,10 +435,10 @@ count turtles with [state = \"B\"]
 11
 
 MONITOR
-759
-400
-853
-445
+428
+411
+522
+456
 # Susceptibles
 count turtles with [state = \"S\"]
 17
@@ -446,10 +446,10 @@ count turtles with [state = \"S\"]
 11
 
 MONITOR
-855
-400
-959
-445
+312
+412
+416
+457
 # Fact-checkers
 count turtles with [state = \"F\"]
 17
@@ -457,10 +457,10 @@ count turtles with [state = \"F\"]
 11
 
 MONITOR
-961
-400
-1048
-445
+466
+321
+553
+366
 # Bad Actors
 count turtles with [state = \"BA\"]
 17
@@ -468,20 +468,20 @@ count turtles with [state = \"BA\"]
 11
 
 TEXTBOX
-690
-375
-840
-393
+232
+388
+382
+406
 Count agents:
 13
 0.0
 1
 
 TEXTBOX
-689
-288
-839
-306
+234
+291
+384
+309
 Graph metrics:
 13
 0.0
@@ -516,8 +516,8 @@ bad-actor-degree
 bad-actor-degree
 0
 number-of-agents
-71.0
-1
+30.0
+10
 1
 NIL
 HORIZONTAL
@@ -531,6 +531,17 @@ Graph:
 13
 0.0
 1
+
+MONITOR
+225
+464
+321
+509
+% of Believers 
+(count turtles with [state = \"B\"] / number-of-agents) * 100
+2
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
